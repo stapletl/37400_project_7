@@ -1,5 +1,6 @@
+#! 
 
-import random
+from random import * 
 import numpy as np
 import signal
 import datetime
@@ -83,7 +84,7 @@ def generate_solvable_problem(num_variables):
     global VERBOSE
 
     k = 3  # 3-SAT
-    random.seed()
+    seed()
 
     # < 4.2 easy;  >4.2 usually unsolvable.  4.2 challenging to determine.
     clauses_per_variable = 4.2
