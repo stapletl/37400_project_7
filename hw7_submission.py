@@ -31,6 +31,14 @@ def check_clause(clause, assignment):
     return clause_val
 
 
+def score(clauses, assignment):
+    sum = 0
+    for clause in clauses:
+        if check_clause(clause, assignment):
+            sum += 1
+    return sum
+
+
 def check(clauses, assignment):
     global VERBOSE
 
@@ -113,8 +121,37 @@ def generate_solvable_problem(num_variables):
 
 
 # timeout is provided in case your method wants to know
-def hw7_submission(num_variables, clauses, timeout):
-    raise(Exception('NotImplemented'))
+def hw7_submission(num_variables, clauses, timeout=None):
+    print('hw7_submission (Hill Climb) search started')
+    # random start state of -1s and 1s
+    assignment = np.array([2*randint(0, 1)-1 for _ in range(num_variables)])
+    while True:
+
+        # if true we found a solution
+        if True == check(clauses, assignment):
+            break
+
+        scores = [0] * num_variables
+        for i in range(num_variables):
+            assignment[i] *= -1
+            # ! need to implement score function to return num of tests passed
+            scores[i] = score(clauses, assignment)
+            assignment[i] *= -1
+
+        # set the new state based on the max score
+        newStateIndex = scores.index(max(scores))
+
+        # if the new state has higher score go to that state
+        if scores[newStateIndex] > score(clauses, assignment):
+            assignment[newStateIndex] *= -1
+        #else pick a new random starting point
+        else:
+            assignment = np.array([2*randint(0, 1)-1 for _ in range(num_variables)])
+
+
+    print('Hill Climb seach completed successfully')
+    return assignment
+
 
 
 def solve_SAT(file, save, timeout, num_variables, algorithms, verbose):
