@@ -1,6 +1,7 @@
-#! 
+#!
 
-from random import * 
+from calendar import c
+from random import *
 import numpy as np
 import signal
 import datetime
@@ -120,9 +121,98 @@ def generate_solvable_problem(num_variables):
     return clauses
 
 
-# timeout is provided in case your method wants to know
-def hw7_submission(num_variables, clauses, timeout=None):
-    print('hw7_submission (Hill Climb) search started')
+def better_random(num_variables, clauses):
+    # random start state of -1s and 1s
+    states = []
+    state_scores = []
+    for x in range(50):
+        states.append(
+            np.array([2*randint(0, 1)-1 for _ in range(num_variables)]))
+        state_scores.append(score(clauses, states[x]))
+    # return a state with the max score out of the 50 random states
+    return states[state_scores.index(max(state_scores))]
+
+
+def hillclimb(num_variables, clauses):
+    print('Hill Climb search started')
+    # random start state of -1s and 1s
+    assignment = better_random(num_variables, clauses)
+    while True:
+
+        # if true we found a solution
+        if True == check(clauses, assignment):
+            break
+
+        scores = [0] * num_variables
+        for i in range(num_variables):
+            assignment[i] *= -1
+            scores[i] = score(clauses, assignment)
+            assignment[i] *= -1
+
+        # set the new state based on the max score
+        newStateIndex = scores.index(max(scores))
+
+        # if the new state has higher score go to that state
+        if scores[newStateIndex] > score(clauses, assignment):
+            assignment[newStateIndex] *= -1
+        # else pick a new random starting point
+        else:
+            assignment = better_random(num_variables, clauses)
+
+    print('Hill Climb seach completed successfully')
+    return assignment
+
+
+def hillclimb_with_tabu(num_variables, clauses):
+    print('Hill Climb with tabu search started')
+
+    def better_random():
+        # random start state of -1s and 1s
+        states = []
+        state_scores = []
+        for x in range(50):
+            states.append(
+                np.array([2*randint(0, 1)-1 for _ in range(num_variables)]))
+            state_scores.append(score(clauses, states[x]))
+        # return a state with the max score out of the 50 random states
+        return states[state_scores.index(max(state_scores))]
+
+    assignment = better_random()
+    tabuDict = {}
+    while True:
+
+        # if true we found a solution
+        if True == check(clauses, assignment):
+            break
+
+        scores = [0] * num_variables
+        for i in range(num_variables):
+            assignment[i] *= -1
+            scores[i] = score(clauses, assignment)
+            assignment[i] *= -1
+
+        # set the new state based on the max score
+        newStateIndex = scores.index(max(scores))
+
+        # if the new state has higher score go to that state
+        if scores[newStateIndex] > score(clauses, assignment):
+            assignment[newStateIndex] *= -1
+            # if the new state has already been explored generate a new state
+            if str(assignment) in tabuDict:
+                assignment = better_random()
+            # add the next assignment to the tabu table
+            tabuDict[str(assignment)] = 1
+        # else pick a new random starting point
+        else:
+            assignment = better_random()
+
+    print('Hill Climb seach completed successfully')
+    print('len(tabuDict):', len(tabuDict))
+    return assignment
+
+
+def stochastic_hillclimb(num_variables, clauses):  # thid one is very bad
+    print('Hill Climb search started')
     # random start state of -1s and 1s
     assignment = np.array([2*randint(0, 1)-1 for _ in range(num_variables)])
     while True:
@@ -134,24 +224,34 @@ def hw7_submission(num_variables, clauses, timeout=None):
         scores = [0] * num_variables
         for i in range(num_variables):
             assignment[i] *= -1
-            # ! need to implement score function to return num of tests passed
             scores[i] = score(clauses, assignment)
             assignment[i] *= -1
 
         # set the new state based on the max score
-        newStateIndex = scores.index(max(scores))
+        currentScore = score(clauses, assignment)
+        # list of all indecies with higher scores
+        possibleStates = [i for i in range(
+            len(scores)) if scores[i] > currentScore]
 
-        # if the new state has higher score go to that state
-        if scores[newStateIndex] > score(clauses, assignment):
-            assignment[newStateIndex] *= -1
-        #else pick a new random starting point
+        # if a new state has higher score go to one of those states
+        # ! I don't think this is the correct way or a good idea
+        if len(possibleStates) > 0:
+            randomBetterIndex = randint(0, len(possibleStates)+1)
+            assignment[randomBetterIndex] *= -1
+        # else pick a new random starting point
         else:
-            assignment = np.array([2*randint(0, 1)-1 for _ in range(num_variables)])
-
+            assignment = np.array(
+                [2*randint(0, 1)-1 for _ in range(num_variables)])
 
     print('Hill Climb seach completed successfully')
     return assignment
 
+# timeout is provided in case your method wants to know
+
+
+def hw7_submission(num_variables, clauses, timeout=None):
+    #print('hw7_submission search started')
+    return hillclimb(num_variables, clauses)
 
 
 def solve_SAT(file, save, timeout, num_variables, algorithms, verbose):
