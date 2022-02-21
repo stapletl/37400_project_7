@@ -8,6 +8,7 @@ import datetime
 import argparse
 import copy
 import json
+import copy
 
 
 class TimeoutException(Exception):
@@ -51,30 +52,6 @@ def check(clauses, assignment):
             return clause
     print('Check succeeded!')
     return True
-
-
-def backtrack_search(num_variables, clauses):
-    print('Backtracking search started')
-
-    def backtrack(assignment, i):
-        # i is next variable number to try values for (1..numvariables)
-        if i == num_variables+1:  # no more variables to try
-            if check(clauses, assignment) == True:
-                return assignment
-            return None
-        else:
-            for val in [-1, 1]:
-                # assignment is 0-ref, so assignment[x] stores variable x+1 value
-                assignment[i-1] = val
-                result = backtrack(assignment, i+1)
-                if result != None:
-                    return result
-        return None
-
-    assignment = np.array([1]*num_variables)
-    result = backtrack(assignment, 1)
-    print('Backtracking search completed successfully')
-    return(result)
 
 
 def random_walk(num_variables, clauses):
@@ -121,6 +98,30 @@ def generate_solvable_problem(num_variables):
     return clauses
 
 
+def backtrack_search(num_variables, clauses):
+    print('Backtracking search started')
+
+    def backtrack(assignment, i):
+        # i is next variable number to try values for (1..numvariables)
+        if i == num_variables+1:  # no more variables to try
+            if check(clauses, assignment) == True:
+                return assignment
+            return None
+        else:
+            for val in [-1, 1]:
+                # assignment is 0-ref, so assignment[x] stores variable x+1 value
+                assignment[i-1] = val
+                result = backtrack(assignment, i+1)
+                if result != None:
+                    return result
+        return None
+
+    assignment = np.array([1]*num_variables)
+    result = backtrack(assignment, 1)
+    print('Backtracking search completed successfully')
+    return(result)
+
+
 def better_random(num_variables, clauses):
     # random start state of -1s and 1s
     states = []
@@ -131,6 +132,81 @@ def better_random(num_variables, clauses):
         state_scores.append(score(clauses, states[x]))
     # return a state with the max score out of the 50 random states
     return states[state_scores.index(max(state_scores))]
+
+
+def solve_dpll(num_variables, clauses, assignment=None):
+
+    # print('clauses', clauses, 'len', len(clauses), 'assignment', assignment)
+
+    def clean_clauses(alpha, clauses_arr):
+        # alpha is pos or neg variable
+        clauses_arr = [x for x in clauses_arr if alpha not in x] # delete clauses containing alpha
+        for x in clauses_arr:
+            if -alpha in x:  # remove !alpha from all clauses
+                x.remove(-alpha)
+        return clauses_arr
+
+    if assignment is None:
+        assignment = np.array([1]*num_variables)
+
+    while sum(len(clause) == 1 for clause in clauses):  # repeat until there are no unit clauses
+
+        for clause in clauses:
+
+            if len(clause) == 1:  # find a unit clause
+                # print('UNIT CLAUSE FOUND', clause)
+                if clause[0] > 0:  # if unit clause is "True"
+                    assignment[clause[0]-1] = 1
+                    clauses = clean_clauses(clause[0], clauses)
+                    break
+                else:  # if unit clause is "False"
+                    assignment[-clause[0]-1] = -1
+                    clauses = clean_clauses(clause[0], clauses)
+                    break
+
+    if sum(len(clause) == 0 for clause in clauses):
+        # if there is an empty clause this expression isn't correct
+        return None
+
+    if len(clauses) == 0:
+        # if all clauses have been removed this expression is correct
+        return assignment
+
+    # pick the first variable in the first clause and test it
+    alpha = abs(clauses[0][0])  # get the abs of the first variable
+
+    assignment_true = assignment.copy()
+    assignment_false = assignment.copy()
+    clauses_true = copy.deepcopy(clauses)
+    clauses_false = copy.deepcopy(clauses)
+
+    if clauses[0][0] > 0:  # if chosen alpha is true
+        assignment_true[alpha-1] = 1
+        assignment_false[alpha-1] = -1
+    else:  # if chosen alpha is false
+        assignment_true[alpha-1] = -1
+        assignment_false[alpha-1] = 1
+
+
+    clauses_true = clean_clauses(clauses_true[0][0], clauses_true)
+    clauses_false = clean_clauses(-clauses_false[0][0], clauses_false)
+
+    #print("alpha to try is:", clauses[0][0])
+    try1 = solve_dpll(num_variables, clauses_true, assignment_true)
+    if try1 is not None:
+        assignment = try1
+        return assignment
+    # print('try 1 failed')
+
+    #print("alpha to try is:", -clauses[0][0])
+    try2 = solve_dpll(num_variables, clauses_false, assignment_false)
+    if try2 is not None:
+        assignment = try2
+        return assignment
+    else:
+        assignment = None
+
+    return assignment
 
 
 def hillclimb(num_variables, clauses):
@@ -251,7 +327,8 @@ def stochastic_hillclimb(num_variables, clauses):  # thid one is very bad
 
 def hw7_submission(num_variables, clauses, timeout=None):
     #print('hw7_submission search started')
-    return hillclimb(num_variables, clauses)
+    assignment = solve_dpll(num_variables, clauses)
+    return assignment if assignment is not None else False
 
 
 def solve_SAT(file, save, timeout, num_variables, algorithms, verbose):
