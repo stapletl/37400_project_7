@@ -135,7 +135,7 @@ def better_random(num_variables, clauses):
 
 '''
 This function implements the (Davis-Putnam-Logemann-Loveland) DPLL algorithm. 
-This algorithm picks variables, then backtracks based on which clause is correct. 
+This algorithm picks variables, then backtracks based on if the clause is corrent. 
 '''
 def solve_dpll(num_variables, clauses, assignment=None):
 
