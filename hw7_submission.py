@@ -133,7 +133,10 @@ def better_random(num_variables, clauses):
     # return a state with the max score out of the 50 random states
     return states[state_scores.index(max(state_scores))]
 
-
+'''
+This function implements the (Davis-Putnam-Logemann-Loveland) DPLL algorithm. 
+This algorithm picks variables, then backtracks based on which clause is correct. 
+'''
 def solve_dpll(num_variables, clauses, assignment=None):
 
     # print('clauses', clauses, 'len', len(clauses), 'assignment', assignment)
@@ -208,7 +211,11 @@ def solve_dpll(num_variables, clauses, assignment=None):
 
     return assignment
 
-
+'''
+This function implements a hill climb algorithm that picks a random starting state. 
+The function then moves towards the higher score. If the algorithm finds the solution, exit. 
+If the function cannot go to a higher, score, restart with another random start state. 
+'''
 def hillclimb(num_variables, clauses):
     print('Hill Climb search started')
     # random start state of -1s and 1s
@@ -238,7 +245,10 @@ def hillclimb(num_variables, clauses):
     print('Hill Climb seach completed successfully')
     return assignment
 
-
+'''
+This function implements a hill climb search algorithm with a tabu list. 
+The tabu list, implemented as a dict, holds the steps that were run and prevents redundant runs
+'''
 def hillclimb_with_tabu(num_variables, clauses):
     print('Hill Climb with tabu search started')
 
@@ -283,12 +293,15 @@ def hillclimb_with_tabu(num_variables, clauses):
             assignment = better_random()
 
     print('Hill Climb seach completed successfully')
-    print('len(tabuDict):', len(tabuDict))
+    # print('len(tabuDict):', len(tabuDict))
     return assignment
 
-
-def stochastic_hillclimb(num_variables, clauses):  # thid one is very bad
-    print('Hill Climb search started')
+'''
+Stochastic hill climb search implements an algorithm that goes to the state with
+the higher score. 
+'''
+def stochastic_hillclimb(num_variables, clauses):  # this one is very bad
+    print('Stochastic Hill Climb search started')
     # random start state of -1s and 1s
     assignment = np.array([2*randint(0, 1)-1 for _ in range(num_variables)])
     while True:
@@ -327,7 +340,10 @@ def stochastic_hillclimb(num_variables, clauses):  # thid one is very bad
 
 def hw7_submission(num_variables, clauses, timeout=None):
     #print('hw7_submission search started')
-    assignment = solve_dpll(num_variables, clauses)
+    #assignment = solve_dpll(num_variables, clauses)
+    #assignment = hillclimb_with_tabu(num_variables, clauses)
+    #assignment = stochastic_hillclimb(num_variables, clauses)
+    assignment = hillclimb(num_variables,clauses)
     return assignment if assignment is not None else False
 
 
