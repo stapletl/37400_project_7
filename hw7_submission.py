@@ -1,7 +1,10 @@
-#!
+# KidsNextDoor
 
-from calendar import c
+# our project has functions for implementing algorithms Hillcimb, stochastic Hillcimb, Tabu, and Davis-Putnam-Logemann-Loveland
+# more detail about each algorithm can be found in the comments above the function declaration
+
 from random import *
+from collections import defaultdict, Counter
 import numpy as np
 import signal
 import datetime
@@ -133,17 +136,21 @@ def better_random(num_variables, clauses):
     # return a state with the max score out of the 50 random states
     return states[state_scores.index(max(state_scores))]
 
+
 '''
 This function implements the (Davis-Putnam-Logemann-Loveland) DPLL algorithm. 
 This algorithm picks variables, then backtracks based on if the clause is corrent. 
 '''
+
+
 def solve_dpll(num_variables, clauses, assignment=None):
 
     # print('clauses', clauses, 'len', len(clauses), 'assignment', assignment)
 
     def clean_clauses(alpha, clauses_arr):
         # alpha is pos or neg variable
-        clauses_arr = [x for x in clauses_arr if alpha not in x] # delete clauses containing alpha
+        # delete clauses containing alpha
+        clauses_arr = [x for x in clauses_arr if alpha not in x]
         for x in clauses_arr:
             if -alpha in x:  # remove !alpha from all clauses
                 x.remove(-alpha)
@@ -175,6 +182,8 @@ def solve_dpll(num_variables, clauses, assignment=None):
         # if all clauses have been removed this expression is correct
         return assignment
 
+    # order the clauses based on variable frequency
+    order_clauses(clauses)
     # pick the first variable in the first clause and test it
     alpha = abs(clauses[0][0])  # get the abs of the first variable
 
@@ -189,7 +198,6 @@ def solve_dpll(num_variables, clauses, assignment=None):
     else:  # if chosen alpha is false
         assignment_true[alpha-1] = -1
         assignment_false[alpha-1] = 1
-
 
     clauses_true = clean_clauses(clauses_true[0][0], clauses_true)
     clauses_false = clean_clauses(-clauses_false[0][0], clauses_false)
@@ -211,11 +219,58 @@ def solve_dpll(num_variables, clauses, assignment=None):
 
     return assignment
 
+
+def order_clauses(clauses):
+    # preprocess the clauses based on the frequency of variables
+    flat_list = [item for sublist in clauses for item in sublist]
+    sums = Counter(flat_list)
+    # print('sums', sums)
+
+    def varOrder(elem):
+        # order the 3 element clause by frequency
+        return sums[elem]
+
+    greatest = sums.most_common(1)[0][0]
+    # print('greatest', greatest)
+
+    for clause in clauses:
+        if greatest in clause:
+            clause.sort(key=varOrder, reverse=True)
+            clauses.insert(0, clauses.pop(clauses.index(clause)))
+            break
+
+
+# def dpll_helper(num_variables, clauses):
+#     # preprocess the clauses based on the order of variables
+
+#     flat_list = [item for sublist in clauses for item in sublist]
+#     sums = Counter(flat_list)
+#     #print('sums', sums)
+
+#     def varOrder(elem):
+#         # the 3 element clause by order
+#         return sums[elem]
+
+#     def clauseOrder(elem):
+#         # sorts all clauses by 1st element
+#         return sums[elem[0]]
+
+#     orderedClauses = copy.deepcopy(clauses)
+#     for clause in orderedClauses:
+#         clause.sort(key=varOrder, reverse=True)
+
+#     orderedClauses.sort(key=clauseOrder, reverse=True)
+#     # print('orderedClauses', orderedClauses)
+
+#     return solve_dpll(num_variables, orderedClauses)
+
 '''
 This function implements a hill climb algorithm that picks a random starting state. 
 The function then moves towards the higher score. If the algorithm finds the solution, exit. 
 If the function cannot go to a higher, score, restart with another random start state. 
 '''
+
+
 def hillclimb(num_variables, clauses):
     print('Hill Climb search started')
     # random start state of -1s and 1s
@@ -245,10 +300,13 @@ def hillclimb(num_variables, clauses):
     print('Hill Climb seach completed successfully')
     return assignment
 
+
 '''
 This function implements a hill climb search algorithm with a tabu list. 
 The tabu list, implemented as a dict, holds the steps that were run and prevents redundant runs
 '''
+
+
 def hillclimb_with_tabu(num_variables, clauses):
     print('Hill Climb with tabu search started')
 
@@ -296,10 +354,13 @@ def hillclimb_with_tabu(num_variables, clauses):
     # print('len(tabuDict):', len(tabuDict))
     return assignment
 
+
 '''
-Stochastic hill climb search implements an algorithm that goes to the state with
-the higher score. 
+Stochastic hill climb search implements an algorithm that goes to a state with
+a higher score. 
 '''
+
+
 def stochastic_hillclimb(num_variables, clauses):  # this one is very bad
     print('Stochastic Hill Climb search started')
     # random start state of -1s and 1s
@@ -340,10 +401,10 @@ def stochastic_hillclimb(num_variables, clauses):  # this one is very bad
 
 def hw7_submission(num_variables, clauses, timeout=None):
     #print('hw7_submission search started')
-    #assignment = solve_dpll(num_variables, clauses)
+    assignment = solve_dpll(num_variables, clauses)
     #assignment = hillclimb_with_tabu(num_variables, clauses)
     #assignment = stochastic_hillclimb(num_variables, clauses)
-    assignment = hillclimb(num_variables,clauses)
+    #assignment = hillclimb(num_variables,clauses)
     return assignment if assignment is not None else False
 
 
